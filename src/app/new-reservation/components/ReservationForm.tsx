@@ -43,6 +43,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { getAllCustomers } from "@/app/api/customer/getAll";
+import { createReservation } from "@/app/api/reservation/create";
 
 const formSchema = z.object({
   customerId: z.string().optional(),
@@ -99,19 +100,19 @@ export function ReservationForm() {
         setSearchResults([]);
         return;
       }
-      
+
       const { data } = await getAllCustomers(value);
 
-      if(data) {
-        setSearchResults(data)
-        setSearchOpen(data.length > 0)
+      if (data) {
+        setSearchResults(data);
+        setSearchOpen(data.length > 0);
       }
     });
   };
 
   useEffect(() => {
     const customerName = form.watch("customerName");
-    if(customerName === "") {
+    if (customerName === "") {
       form.reset();
     }
 
@@ -142,7 +143,20 @@ export function ReservationForm() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     startFetch(async () => {
-      toast("Reserva criada com sucesso!");
+      const { data, error } = await createReservation({
+        cliente: {
+          id: parseInt(values.customerId || "0"),
+          cpf: values.cpf,
+          rg: values.rg,
+          email: values.email,
+          nome: values.customerName,
+          telefone: values.phone,
+        },
+        funcionarioId: 1,
+        quartoId: parseInt(values.quartoId || "0"),
+      });
+
+      toast(data ? "Reserva criada com sucesso!" : error?.message);
     });
   }
 
@@ -178,7 +192,7 @@ export function ReservationForm() {
                         <Input
                           placeholder="Digite para buscar hóspedes"
                           {...field}
-                          onClick={e => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
                           className="w-full"
                         />
                         <button
@@ -215,7 +229,8 @@ export function ReservationForm() {
                               <Check
                                 className={cn(
                                   "ml-auto h-4 w-4",
-                                  form.getValues("customerId") === user.id.toString()
+                                  form.getValues("customerId") ===
+                                    user.id.toString()
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}
