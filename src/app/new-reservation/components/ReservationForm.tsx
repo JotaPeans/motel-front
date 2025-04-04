@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { toast } from "sonner";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,9 +25,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Room } from "@/lib/types/Room";
+import { getAllRooms } from "@/app/api/room/getAll";
+import { Customer } from "@/lib/types/Customer";
+import { cn, cpfMask, phoneMask, rgMask } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { getAllCustomers } from "@/app/api/customer/getAll";
 
 const formSchema = z.object({
+  customerId: z.string().optional(),
   customerName: z.string().min(2, {
     message: "Nome do hóspede deve ter pelo menos 2 caracteres.",
   }),
@@ -36,13 +56,13 @@ const formSchema = z.object({
     message: "Por favor, insira um número de telefone válido.",
   }),
   cpf: z.string().min(11, {
-    message: "Por favor, insira um CPF válido.",
+    message: "Por favor, insira um cpf válido.",
   }),
   rg: z.string().min(7, {
-    message: "Por favor, insira um RG válido.",
+    message: "Por favor, insira um rg válido.",
   }),
-  roomType: z.string({
-    required_error: "Por favor, selecione um tipo de quarto.",
+  quartoId: z.string({
+    required_error: "Por favor, selecione um quarto.",
   }),
   paymentMethod: z.string({
     required_error: "Por favor, selecione um método de pagamento.",
@@ -51,7 +71,14 @@ const formSchema = z.object({
 
 export function ReservationForm() {
   const router = useRouter();
+
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<Customer[]>([]);
+
   const [isLoading, startFetch] = useTransition();
+  const [_, startFetchRooms] = useTransition();
+  const [isSearchLoading, startFetchCustomer] = useTransition();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,45 +91,74 @@ export function ReservationForm() {
     },
   });
 
+  const isSelectedCustomer = form.getValues("customerId");
+
+  const handleGuestSearch = (value: string) => {
+    startFetchCustomer(async () => {
+      if (value.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+      
+      const { data } = await getAllCustomers(value);
+
+      if(data) {
+        setSearchResults(data)
+        setSearchOpen(data.length > 0)
+      }
+    });
+  };
+
+  useEffect(() => {
+    const customerName = form.watch("customerName");
+    if(customerName === "") {
+      form.reset();
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (customerName) handleGuestSearch(customerName);
+    }, 600);
+
+    return () => clearTimeout(timeoutId);
+  }, [form.watch("customerName")]);
+
+  const selectUser = (user: Customer) => {
+    form.setValue("customerId", user.id.toString());
+    form.setValue("customerName", user.nome);
+    form.setValue("email", user.email);
+    form.setValue("phone", phoneMask(user.telefone));
+    form.setValue("cpf", cpfMask(user.cpf));
+    form.setValue("rg", rgMask(user.rg));
+    setSearchOpen(false);
+  };
+
+  useEffect(() => {
+    startFetchRooms(async () => {
+      const { data } = await getAllRooms();
+
+      if (data) setRooms(data);
+    });
+  }, []);
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     startFetch(async () => {
       toast("Reserva criada com sucesso!");
-    })
+    });
   }
 
-  // Função para aplicar máscara de CPF
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
-    if (value.length <= 11) {
-      value = value.replace(/(\d{3})(\d)/, "$1.$2");
-      value = value.replace(/(\d{3})(\d)/, "$1.$2");
-      value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-      form.setValue("cpf", value);
-    }
+    form.setValue("cpf", cpfMask(value));
   };
 
-  // Modifique a função handleRgChange para usar o formato X.XXX.XXX
   const handleRgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
-    if (value.length <= 7) {
-      value = value.replace(/^(\d{1})(\d)/, "$1.$2");
-      value = value.replace(/^(\d{1})\.(\d{3})(\d)/, "$1.$2.$3");
-      form.setValue("rg", value);
-    }
+    form.setValue("rg", rgMask(value));
   };
 
-  // Adicione uma nova função para aplicar máscara de telefone
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
-    if (value.length <= 11) {
-      if (value.length > 2) {
-        value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-      }
-      if (value.length > 9) {
-        value = value.replace(/($$\d{2}$$\s)(\d{5})(\d)/, "$1$2-$3");
-      }
-      form.setValue("phone", value);
-    }
+    form.setValue("phone", phoneMask(value));
   };
 
   return (
@@ -113,11 +169,64 @@ export function ReservationForm() {
             control={form.control}
             name="customerName"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome do Cliente</FormLabel>
-                <FormControl>
-                  <Input placeholder="nome cliente" {...field} />
-                </FormControl>
+              <FormItem className="flex flex-col">
+                <FormLabel>Nome do Hóspede</FormLabel>
+                <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          placeholder="Digite para buscar hóspedes"
+                          {...field}
+                          onClick={e => e.stopPropagation()}
+                          className="w-full"
+                        />
+                        <button
+                          className="absolute right-0 top-0 h-full px-3 cursor-pointer"
+                          onClick={() => setSearchOpen(!searchOpen)}
+                          type="button"
+                        >
+                          <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                        </button>
+                      </div>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="col-span-1 p-0" align="start">
+                    <Command>
+                      <CommandList>
+                        <CommandEmpty>
+                          {isSearchLoading
+                            ? "Buscando..."
+                            : "Nenhum hóspede encontrado."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {searchResults.map((user) => (
+                            <CommandItem
+                              key={user.id}
+                              value={user.id.toString()}
+                              onSelect={() => selectUser(user)}
+                            >
+                              <div className="flex flex-col">
+                                <span>{user.nome}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {user.email}
+                                </span>
+                              </div>
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  form.getValues("customerId") === user.id.toString()
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -125,6 +234,7 @@ export function ReservationForm() {
           <FormField
             control={form.control}
             name="email"
+            disabled={Boolean(isSelectedCustomer)}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>E-mail</FormLabel>
@@ -138,12 +248,13 @@ export function ReservationForm() {
           <FormField
             control={form.control}
             name="phone"
+            disabled={Boolean(isSelectedCustomer)}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="(11) 98765-4321"
+                    placeholder="(00) 00000-0000"
                     {...field}
                     onChange={(e) => {
                       field.onChange(e);
@@ -159,9 +270,10 @@ export function ReservationForm() {
           <FormField
             control={form.control}
             name="cpf"
+            disabled={Boolean(isSelectedCustomer)}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>CPF</FormLabel>
+                <FormLabel>cpf</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="000.000.000-00"
@@ -180,9 +292,10 @@ export function ReservationForm() {
           <FormField
             control={form.control}
             name="rg"
+            disabled={Boolean(isSelectedCustomer)}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>RG</FormLabel>
+                <FormLabel>rg</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="0.000.000"
@@ -200,22 +313,25 @@ export function ReservationForm() {
           />
           <FormField
             control={form.control}
-            name="roomType"
+            name="quartoId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tipo de Quarto</FormLabel>
+                <FormLabel>Quarto</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um tipo de quarto" />
+                      <SelectValue placeholder="Selecione um quarto" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="SUITE">Suíte</SelectItem>
-                    <SelectItem value="DELUXE">Deluxe</SelectItem>
+                    {rooms.map((room, key) => (
+                      <SelectItem key={key} value={room.id.toString()}>
+                        {room.numero}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
