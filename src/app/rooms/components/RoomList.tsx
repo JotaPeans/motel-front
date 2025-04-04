@@ -10,7 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -92,7 +91,6 @@ export function RoomList({ rooms: roomsProp }: RoomListProps) {
               <TableHead>Andar</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Cliente Atual</TableHead>
-              <TableHead>Check Out</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -116,8 +114,7 @@ export function RoomList({ rooms: roomsProp }: RoomListProps) {
                     </span>
                   </div>
                 </TableCell>
-                <TableCell>{"—"}</TableCell>
-                <TableCell>{"—"}</TableCell>
+                <TableCell>{room.clienteNome || "-"}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

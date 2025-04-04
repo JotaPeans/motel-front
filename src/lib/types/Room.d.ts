@@ -3,4 +3,5 @@ export interface Room {
   numero: number;
   tipo: "DELUXE" | "SUITE";
   status: "OCUPADO" | "DISPONIVEL" | "MANUTENCAO" | "RESERVADO" | "LIMPEZA";
+  clienteNome: string | null;
 }
