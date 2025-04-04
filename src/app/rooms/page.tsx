@@ -16,8 +16,8 @@ import { redirect } from "next/navigation";
 import AddQuarto from "./components/AddQuarto";
 
 export const metadata: Metadata = {
-  title: "Room Management",
-  description: "Manage motel rooms and their status",
+  title: "Gerenciamento de Quartos",
+  description: "Gerencie os quartos do motel e seu status",
 };
 
 export default async function RoomsPage() {
@@ -51,7 +51,7 @@ export default async function RoomsPage() {
             <Link href="/reservations">Reservas</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/guests">Clientes</Link>
+            <Link href="/customers">Clientes</Link>
           </Button>
           <Button asChild size="sm">
             <Link href="/new-reservation">Nova Reserva</Link>
