@@ -27,6 +27,11 @@ import {
 } from "@/components/ui/table";
 import { MoreHorizontal, Search } from "lucide-react";
 import { Room } from "@/lib/types/Room";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
+import { checkoutReservation } from "@/app/api/reservation/checkout";
+import { revalidateServerData } from "@/app/api/revalidateServerData";
+import { usePathname } from "next/navigation";
 
 const roomTypes = ["Suite", "Deluxe"];
 
@@ -34,7 +39,6 @@ const statusColors = {
   OCUPADO: "bg-red-500",
   DISPONIVEL: "bg-green-500",
   MANUTENCAO: "bg-amber-500",
-  RESERVADO: "bg-blue-500",
   LIMPEZA: "bg-purple-500",
 };
 
@@ -43,10 +47,24 @@ interface RoomListProps {
 }
 
 export function RoomList({ rooms }: RoomListProps) {
+  const pathname = usePathname();
+
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
 
   const filteredRooms = rooms.filter((room) => room);
+
+  async function onCheckout(reservaId: number) {
+    const { data, error } = await checkoutReservation(reservaId);
+
+    toast(
+      data
+        ? "Checkout realizado com sucesso"
+        : error?.message || "Erro ao realizar checkout do quarto!"
+    );
+
+    await revalidateServerData(pathname);
+  }
 
   return (
     <div className="w-full">
@@ -104,11 +122,11 @@ export function RoomList({ rooms }: RoomListProps) {
                   <div className="flex items-center gap-2">
                     <div
                       className={`h-3 w-3 rounded-full ${
-                        statusColors[room.status]
+                        statusColors[room.clienteNome ? "OCUPADO" : room.status]
                       }`}
                     />
                     <span className="capitalize">
-                      {room.status.toLowerCase()}
+                      {room.clienteNome ? "Ocupado" : room.status.toLowerCase()}
                     </span>
                   </div>
                 </TableCell>
@@ -127,12 +145,16 @@ export function RoomList({ rooms }: RoomListProps) {
                       </DropdownMenuLabel>
                       <DropdownMenuItem>Editar Quarto</DropdownMenuItem>
 
-                      <DropdownMenuItem>Mudar Status</DropdownMenuItem>
-                      {room.status === "OCUPADO" && (
-                        <DropdownMenuItem>Check Out</DropdownMenuItem>
-                      )}
-                      {room.status === "DISPONIVEL" && (
-                        <DropdownMenuItem>Check In</DropdownMenuItem>
+                      {room.clienteNome && (
+                        <ConfirmDialog
+                          title="Checkout da reserva"
+                          description="Deseja realizar o checkout da reserva?"
+                          onConfirm={async () => await onCheckout(room.reservaId)}
+                        >
+                          <button className="focus:bg-accent hover:bg-accent w-full focus:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+                            Check Out
+                          </button>
+                        </ConfirmDialog>
                       )}
                       {room.status === "MANUTENCAO" && (
                         <DropdownMenuItem>

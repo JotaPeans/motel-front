@@ -4,7 +4,8 @@ export interface Room {
   tipo: RoomTipo;
   status: RoomStatus;
   clienteNome: string | null;
+  reservaId: number;
 }
 
 export type RoomTipo = "DELUXE" | "SUITE";
-export type RoomStatus = "OCUPADO" | "DISPONIVEL" | "MANUTENCAO" | "RESERVADO" | "LIMPEZA";
+export type RoomStatus = "OCUPADO" | "DISPONIVEL" | "MANUTENCAO" | "LIMPEZA";
