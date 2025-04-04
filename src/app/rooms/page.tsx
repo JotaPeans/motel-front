@@ -13,6 +13,7 @@ import {
 import { RoomList } from "./components/RoomList";
 import { getAllRooms } from "../api/room/getAll";
 import { redirect } from "next/navigation";
+import AddQuarto from "./components/AddQuarto";
 
 export const metadata: Metadata = {
   title: "Room Management",
@@ -60,10 +61,7 @@ export default async function RoomsPage() {
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Gerenciamento de Quartos</h1>
-          <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Quarto
-          </Button>
+          <AddQuarto/>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>

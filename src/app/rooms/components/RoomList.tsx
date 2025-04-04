@@ -42,9 +42,7 @@ interface RoomListProps {
   rooms: Room[];
 }
 
-export function RoomList({ rooms: roomsProp }: RoomListProps) {
-  const [rooms, setRooms] = useState<Room[]>(roomsProp);
-  const [searchTerm, setSearchTerm] = useState("");
+export function RoomList({ rooms }: RoomListProps) {
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
 

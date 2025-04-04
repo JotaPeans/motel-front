@@ -1,7 +1,10 @@
 export interface Room {
   id: number;
   numero: number;
-  tipo: "DELUXE" | "SUITE";
-  status: "OCUPADO" | "DISPONIVEL" | "MANUTENCAO" | "RESERVADO" | "LIMPEZA";
+  tipo: RoomTipo;
+  status: RoomStatus;
   clienteNome: string | null;
 }
+
+export type RoomTipo = "DELUXE" | "SUITE";
+export type RoomStatus = "OCUPADO" | "DISPONIVEL" | "MANUTENCAO" | "RESERVADO" | "LIMPEZA";
