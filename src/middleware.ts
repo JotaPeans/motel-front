@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
-const redirectToRoomsUrls = ["/login"];
+const publicRoutes = ["/login"];
+const privateRoutes = ["/dashboard", "/rooms", "/new-reservations", "/customers", "/reservations"];
 
 function verifyJwt(token: string) {
   try {
@@ -22,16 +23,20 @@ export function middleware(request: NextRequest) {
   const isTokenValid = verifyJwt(accessToken?.value || "");
 
   if (isTokenValid) {
-    if (redirectToRoomsUrls.includes(request.nextUrl.pathname)) {
-      return NextResponse.redirect(new URL("/rooms", request.url));
+    if (publicRoutes.includes(request.nextUrl.pathname)) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-    return;
+    return NextResponse.next({
+      request,
+    });
   }
 
-  if (redirectToRoomsUrls.includes(request.nextUrl.pathname) === false) {
+  if (privateRoutes.includes(request.nextUrl.pathname)) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-  return;
+  return NextResponse.next({
+    request,
+  });
 }
 
 export const config = {
