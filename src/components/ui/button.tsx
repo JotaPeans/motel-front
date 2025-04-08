@@ -53,7 +53,7 @@ function Button({
   children,
   ...props
 }: ButtonProps) {
-  const Comp = asChild ? Slot : "button";
+  const Comp = asChild && disabled === false ? Slot : "button";
 
   return (
     <Comp

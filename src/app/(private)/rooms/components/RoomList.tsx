@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { checkoutReservation } from "@/app/api/reservation/checkout";
 import { revalidateServerData } from "@/app/api/revalidateServerData";
 import { usePathname } from "next/navigation";
+import { useSession } from "../../AppContext";
 
 const roomTypes = ["Suite", "Deluxe"];
 
@@ -47,6 +48,7 @@ interface RoomListProps {
 }
 
 export function RoomList({ rooms }: RoomListProps) {
+  const { session } = useSession();
   const pathname = usePathname();
 
   const [statusFilter, setStatusFilter] = useState("All");
