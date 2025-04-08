@@ -21,7 +21,7 @@ export default function LoginPage() {
     });
 
     if (data) {
-      router.push("/rooms");
+      router.push("/dashboard");
     }
 
     if (error) {
