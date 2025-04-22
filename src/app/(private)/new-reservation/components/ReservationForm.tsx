@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { object, z } from "zod";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown } from "lucide-react";
 
@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/popover";
 import { getAllCustomers } from "@/app/api/customer/getAll";
 import { createReservation } from "@/app/api/reservation/create";
+import { paymentMethods, PaymentMethodType } from "@/lib/types/PaymentMethod"
 
 const formSchema = z.object({
   customerId: z.string().optional(),
@@ -371,15 +372,11 @@ export function ReservationForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="creditCard">
-                      Cartão de Crédito
-                    </SelectItem>
-                    <SelectItem value="debitCard">Cartão de Débito</SelectItem>
-                    <SelectItem value="cash">Dinheiro</SelectItem>
-                    <SelectItem value="bankTransfer">
-                      Transferência Bancária
-                    </SelectItem>
-                    <SelectItem value="pix">PIX</SelectItem>
+                    {paymentMethods.map(method => (
+                      <SelectItem key={method} value={method} className="capitalize">
+                        {method.toLowerCase()}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
