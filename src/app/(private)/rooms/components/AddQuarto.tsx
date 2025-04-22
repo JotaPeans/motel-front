@@ -51,6 +51,7 @@ const AddQuarto = () => {
 
       const { data, error } = await createRoom({
         numero: parseInt(formData.numero),
+        valor: formData.valor,
         tipo: formData.tipo,
       });
 
