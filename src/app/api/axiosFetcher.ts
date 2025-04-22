@@ -1,5 +1,4 @@
-// import { auth } from '@/../lib/auth-config';
-// import { getServerSession } from 'next-auth';
+import { cookies } from 'next/headers';
 
 import axios, { AxiosHeaders, AxiosRequestConfig, AxiosResponse } from 'axios';
 
@@ -55,7 +54,8 @@ async function makeHttpRequest<T>({
 }> {
   let response: AxiosResponse<T>;
 
-  const axios = createAxios('');
+  const authToken = (await cookies()).get("access-token")
+  const axios = createAxios(authToken?.value || "");
 
   switch (method) {
     case 'GET':

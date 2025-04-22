@@ -101,21 +101,26 @@ const AddQuarto = () => {
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="valor" className="text-right">
-              Valor do Quarto
+              Preço
             </Label>
-            <Input
-              id="valor"
-              placeholder="003"
-              value={formData.valor}
-              onChange={(e) => {
-                setData((prev) => {
-                  const newData = { ...prev };
-                  newData.valor = parseFloat(e.target.value.replace(/\D/g, ''));
-                  return newData;
-                });
-              }}
-              className="col-span-3"
-            />
+
+            <div className="col-span-3 relative">
+              <span className="absolute left-2 -translate-y-1/2 top-1/2 dark:text-zinc-500 text-sm font-medium">R$</span>
+              <Input
+                id="valor"
+                placeholder="003"
+                value={formData.valor}
+                onChange={(e) => {
+                  setData((prev) => {
+                    const newData = { ...prev };
+                    const text = e.target.value.replace(/\D/g, '');
+                    newData.valor = parseFloat(text) || 0;
+                    return newData;
+                  });
+                }}
+                className="col-span-3 pl-7"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">

@@ -106,6 +106,7 @@ export function RoomList({ rooms }: RoomListProps) {
             <TableRow>
               <TableHead className="w-[100px]">Quarto #</TableHead>
               <TableHead>Tipo</TableHead>
+              <TableHead>Preço</TableHead>
               <TableHead>Andar</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Cliente Atual</TableHead>
@@ -116,10 +117,16 @@ export function RoomList({ rooms }: RoomListProps) {
             {filteredRooms.map((room) => (
               <TableRow key={room.id}>
                 <TableCell className="font-semibold">{room.numero}</TableCell>
-                <TableCell className="capitalize">
+                <TableCell className="capitalize font-semibold">
                   {room.tipo.toLowerCase()}
                 </TableCell>
-                <TableCell>{(room.numero / 100).toFixed(0)}</TableCell>
+                <TableCell className="font-semibold">
+                  {new Intl.NumberFormat("pr-br", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(room.valor)}
+                </TableCell>
+                <TableCell className="font-semibold">{(room.numero / 100).toFixed(0)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div
@@ -151,7 +158,9 @@ export function RoomList({ rooms }: RoomListProps) {
                         <ConfirmDialog
                           title="Checkout da reserva"
                           description="Deseja realizar o checkout da reserva?"
-                          onConfirm={async () => await onCheckout(room.reservaId)}
+                          onConfirm={async () =>
+                            await onCheckout(room.reservaId)
+                          }
                         >
                           <button className="focus:bg-accent hover:bg-accent w-full focus:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
                             Check Out
