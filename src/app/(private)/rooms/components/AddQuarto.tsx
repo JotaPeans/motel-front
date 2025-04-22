@@ -33,8 +33,9 @@ import { revalidateServerData } from "@/app/api/revalidateServerData";
 const AddQuarto = () => {
   const pathname = usePathname();
 
-  const [formData, setData] = useState<{ numero: string; tipo: RoomTipo }>({
+  const [formData, setData] = useState<{ numero: string; valor: number, tipo: RoomTipo }>({
     numero: "",
+    valor: 100.0,
     tipo: "SUITE",
   });
   const [error, setError] = useState("");
@@ -91,6 +92,25 @@ const AddQuarto = () => {
                 setData((prev) => {
                   const newData = { ...prev };
                   newData.numero = e.target.value.replace(/\D/g, '');
+                  return newData;
+                });
+              }}
+              className="col-span-3"
+            />
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="valor" className="text-right">
+              Valor do Quarto
+            </Label>
+            <Input
+              id="valor"
+              placeholder="003"
+              value={formData.valor}
+              onChange={(e) => {
+                setData((prev) => {
+                  const newData = { ...prev };
+                  newData.valor = parseFloat(e.target.value.replace(/\D/g, ''));
                   return newData;
                 });
               }}

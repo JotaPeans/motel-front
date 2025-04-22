@@ -3,6 +3,7 @@ export interface Room {
   numero: number;
   tipo: RoomTipo;
   status: RoomStatus;
+  valor: number;
   clienteNome: string | null;
   reservaId: number;
 }
