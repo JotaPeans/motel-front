@@ -26,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MoreHorizontal, Search } from "lucide-react";
-import { Room } from "@/lib/types/Room";
+import { Room, RoomStatus, RoomTipo } from "@/lib/types/Room";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 import { checkoutReservation } from "@/app/api/reservation/checkout";
@@ -51,10 +51,18 @@ export function RoomList({ rooms }: RoomListProps) {
   const { session } = useSession();
   const pathname = usePathname();
 
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [typeFilter, setTypeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState<RoomStatus | null>(null);
+  const [typeFilter, setTypeFilter] = useState<RoomTipo | null>(null);
 
-  const filteredRooms = rooms.filter((room) => room);
+  const filteredRooms = rooms.filter(
+    (room) => {
+      if(statusFilter || typeFilter) {
+        return room.status === statusFilter || room.tipo === typeFilter
+      }
+      
+      return room;
+    }
+  );
 
   async function onCheckout(reservaId: number) {
     const { data, error } = await checkoutReservation(reservaId);
@@ -72,7 +80,16 @@ export function RoomList({ rooms }: RoomListProps) {
     <div className="w-full">
       <div className="flex items-center justify-between py-4">
         <div className="flex items-center gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter ?? "All"}
+            onValueChange={(e) => {
+              if (e === "All") {
+                setStatusFilter(null);
+              } else {
+                setStatusFilter(e as RoomStatus);
+              }
+            }}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -85,7 +102,16 @@ export function RoomList({ rooms }: RoomListProps) {
               <SelectItem value="LIMPEZA">Limpeza</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select
+            value={typeFilter ?? "All"}
+            onValueChange={(e) => {
+              if (e === "All") {
+                setTypeFilter(null);
+              } else {
+                setTypeFilter(e as RoomTipo);
+              }
+            }}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
@@ -126,16 +152,18 @@ export function RoomList({ rooms }: RoomListProps) {
                     currency: "BRL",
                   }).format(room.valor)}
                 </TableCell>
-                <TableCell className="font-semibold">{(room.numero / 100).toFixed(0)}</TableCell>
+                <TableCell className="font-semibold">
+                  {(room.numero / 100).toFixed(0)}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div
                       className={`h-3 w-3 rounded-full ${
-                        statusColors[room.clienteNome ? "OCUPADO" : room.status]
+                        statusColors[room.status]
                       }`}
                     />
                     <span className="capitalize">
-                      {room.clienteNome ? "Ocupado" : room.status.toLowerCase()}
+                      {room.status.toLowerCase()}
                     </span>
                   </div>
                 </TableCell>

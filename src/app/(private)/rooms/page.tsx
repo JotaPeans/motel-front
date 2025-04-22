@@ -12,6 +12,7 @@ import { RoomList } from "./components/RoomList";
 import { getAllRooms } from "@/app/api/room/getAll";
 import { redirect } from "next/navigation";
 import AddQuarto from "./components/AddQuarto";
+import { Room } from "@/lib/types/Room";
 
 export const metadata: Metadata = {
   title: "Gerenciamento de Quartos",
@@ -23,14 +24,27 @@ export default async function RoomsPage() {
 
   if (data === null) return redirect("/");
 
+  const rooms: Room[] = data.map((room) => {
+    if (room.clienteNome) {
+      return {
+        ...room,
+        status: "OCUPADO",
+      };
+    } else {
+      return {
+        ...room,
+      };
+    }
+  });
+
   const totalRooms = data.length;
-  const busyRoomsLength = data.filter(
+  const busyRoomsLength = rooms.filter(
     (room) => room.status === "OCUPADO"
   ).length;
-  const availableRoomsLength = data.filter(
+  const availableRoomsLength = rooms.filter(
     (room) => room.status === "DISPONIVEL"
   ).length;
-  const maintenceRoomsLength = data.filter(
+  const maintenceRoomsLength = rooms.filter(
     (room) => room.status === "MANUTENCAO"
   ).length;
 
@@ -100,7 +114,7 @@ export default async function RoomsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <RoomList rooms={data} />
+          <RoomList rooms={rooms} />
         </CardContent>
       </Card>
     </main>
