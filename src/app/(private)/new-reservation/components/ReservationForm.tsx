@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -44,7 +44,11 @@ import {
 } from "@/components/ui/popover";
 import { getAllCustomers } from "@/app/api/customer/getAll";
 import { createReservation } from "@/app/api/reservation/create";
-import { paymentMethods, PaymentMethodType } from "@/lib/types/PaymentMethod"
+import { paymentMethods, PaymentMethodType } from "@/lib/types/Payment";
+import { createPixPaymentIntent } from "@/app/api/payment/createPixPaymentIntent";
+import { PixOrder } from "@/app/api/payment/createPixPaymentIntent";
+import PixDialog from "./PixDialog";
+import { createPointPaymentIntent } from "@/app/api/payment/createPointPaymentIntent";
 
 const formSchema = z.object({
   customerId: z.string().optional(),
@@ -66,7 +70,7 @@ const formSchema = z.object({
   quartoId: z.string({
     required_error: "Por favor, selecione um quarto.",
   }),
-  paymentMethod: z.string({
+  paymentMethod: z.enum(["PIX", "DEBITO", "CREDITO", "DINHEIRO"], {
     required_error: "Por favor, selecione um método de pagamento.",
   }),
 });
@@ -77,6 +81,7 @@ export function ReservationForm() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
+  const [pixOrder, setPixOrder] = useState<PixOrder | null>(null);
 
   const [isLoading, startFetch] = useTransition();
   const [_, startFetchRooms] = useTransition();
@@ -92,6 +97,30 @@ export function ReservationForm() {
       rg: "",
     },
   });
+
+  const clearOrder = useCallback(() => {
+    setPixOrder(null);
+  }, []);
+
+  const customerPaid = useCallback(async () => {
+    const values = form.getValues();
+
+    const { data, error } = await createReservation({
+      cliente: {
+        id: parseInt(values.customerId || "0"),
+        cpf: values.cpf,
+        rg: values.rg,
+        email: values.email,
+        nome: values.customerName,
+        telefone: values.phone,
+      },
+      funcionarioId: 1,
+      quartoId: parseInt(values.quartoId || "0"),
+    });
+
+    toast(data ? "Reserva criada com sucesso!" : error?.message);
+    setPixOrder(null);
+  }, []);
 
   const isSelectedCustomer = form.getValues("customerId");
 
@@ -142,24 +171,41 @@ export function ReservationForm() {
     });
   }, []);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit() {
+    const values = form.getValues();
+
     startFetch(async () => {
-      const { data, error } = await createReservation({
-        cliente: {
-          id: parseInt(values.customerId || "0"),
-          cpf: values.cpf,
-          rg: values.rg,
-          email: values.email,
-          nome: values.customerName,
-          telefone: values.phone,
-        },
-        funcionarioId: 1,
-        quartoId: parseInt(values.quartoId || "0"),
-      });
+      const customer = {
+        id: parseInt(values.customerId || "0"),
+        cpf: values.cpf,
+        rg: values.rg,
+        email: values.email,
+        nome: values.customerName,
+        telefone: values.phone,
+      };
 
-      // TODO: Chamar back para fazer o pagamento? 
+      if (values.paymentMethod === "PIX") {
+        const { data, error } = await createPixPaymentIntent({
+          roomId: parseInt(values.quartoId),
+          customer: customer,
+        });
 
-      toast(data ? "Reserva criada com sucesso!" : error?.message);
+        if (data) setPixOrder(data);
+
+        if (error) toast(error.message);
+      } else if (["DEBITO", "CREDITO"].includes(values.paymentMethod)) {
+        const { data, error } = await createPointPaymentIntent({
+          method: values.paymentMethod.toLowerCase() as "credit" | "debit",
+          roomId: parseInt(values.quartoId),
+          customer: customer,
+        });
+
+        if (data) {
+          //TODO: Abrir um dialog para pedir o pagamento via maquineta
+        }
+
+        if (error) toast(error.message);
+      }
     });
   }
 
@@ -179,224 +225,236 @@ export function ReservationForm() {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="customerName"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Nome do Hóspede</FormLabel>
-                <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-                  <PopoverTrigger asChild>
+    <>
+      <PixDialog
+        order={pixOrder}
+        clearOrder={clearOrder}
+        customerPaid={customerPaid}
+      />
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="customerName"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Nome do Hóspede</FormLabel>
+                  <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            placeholder="Digite para buscar hóspedes"
+                            {...field}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full"
+                          />
+                          <button
+                            className="absolute right-0 top-0 h-full px-3 cursor-pointer"
+                            onClick={() => setSearchOpen(!searchOpen)}
+                            type="button"
+                          >
+                            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                          </button>
+                        </div>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="col-span-1 p-0" align="start">
+                      <Command>
+                        <CommandList>
+                          <CommandEmpty>
+                            {isSearchLoading
+                              ? "Buscando..."
+                              : "Nenhum hóspede encontrado."}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {searchResults.map((user) => (
+                              <CommandItem
+                                key={user.id}
+                                value={user.id.toString()}
+                                onSelect={() => selectUser(user)}
+                              >
+                                <div className="flex flex-col">
+                                  <span>{user.nome}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {user.email}
+                                  </span>
+                                </div>
+                                <Check
+                                  className={cn(
+                                    "ml-auto h-4 w-4",
+                                    form.getValues("customerId") ===
+                                      user.id.toString()
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              disabled={Boolean(isSelectedCustomer)}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>E-mail</FormLabel>
+                  <FormControl>
+                    <Input placeholder="email@exemplo.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone"
+              disabled={Boolean(isSelectedCustomer)}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="(00) 00000-0000"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handlePhoneChange(e);
+                      }}
+                      maxLength={14}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="cpf"
+              disabled={Boolean(isSelectedCustomer)}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>cpf</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="000.000.000-00"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleCpfChange(e);
+                      }}
+                      maxLength={14}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="rg"
+              disabled={Boolean(isSelectedCustomer)}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>rg</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="0.000.000"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleRgChange(e);
+                      }}
+                      maxLength={9}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="quartoId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quarto</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
-                      <div className="relative">
-                        <Input
-                          placeholder="Digite para buscar hóspedes"
-                          {...field}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full"
-                        />
-                        <button
-                          className="absolute right-0 top-0 h-full px-3 cursor-pointer"
-                          onClick={() => setSearchOpen(!searchOpen)}
-                          type="button"
-                        >
-                          <ChevronsUpDown className="h-4 w-4 opacity-50" />
-                        </button>
-                      </div>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um quarto" />
+                      </SelectTrigger>
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="col-span-1 p-0" align="start">
-                    <Command>
-                      <CommandList>
-                        <CommandEmpty>
-                          {isSearchLoading
-                            ? "Buscando..."
-                            : "Nenhum hóspede encontrado."}
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {searchResults.map((user) => (
-                            <CommandItem
-                              key={user.id}
-                              value={user.id.toString()}
-                              onSelect={() => selectUser(user)}
-                            >
-                              <div className="flex flex-col">
-                                <span>{user.nome}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {user.email}
-                                </span>
-                              </div>
-                              <Check
-                                className={cn(
-                                  "ml-auto h-4 w-4",
-                                  form.getValues("customerId") ===
-                                    user.id.toString()
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="email"
-            disabled={Boolean(isSelectedCustomer)}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>E-mail</FormLabel>
-                <FormControl>
-                  <Input placeholder="email@exemplo.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phone"
-            disabled={Boolean(isSelectedCustomer)}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefone</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="(00) 00000-0000"
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(e);
-                      handlePhoneChange(e);
-                    }}
-                    maxLength={14}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="cpf"
-            disabled={Boolean(isSelectedCustomer)}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>cpf</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="000.000.000-00"
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(e);
-                      handleCpfChange(e);
-                    }}
-                    maxLength={14}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="rg"
-            disabled={Boolean(isSelectedCustomer)}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>rg</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="0.000.000"
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(e);
-                      handleRgChange(e);
-                    }}
-                    maxLength={9}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="quartoId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quarto</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um quarto" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {rooms.map((room, key) => (
-                      <SelectItem key={key} value={room.id.toString()}>
-                        {room.numero}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="paymentMethod"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Método de Pagamento</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o método de pagamento" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {paymentMethods.map(method => (
-                      <SelectItem key={method} value={method} className="capitalize">
-                        {method.toLowerCase()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/")}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" isLoading={isLoading}>
-            Criar Reserva
-          </Button>
-        </div>
-      </form>
-    </Form>
+                    <SelectContent>
+                      {rooms.map((room, key) => (
+                        <SelectItem key={key} value={room.id.toString()}>
+                          {room.numero}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Método de Pagamento</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o método de pagamento" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {paymentMethods.map((method) => (
+                        <SelectItem
+                          key={method}
+                          value={method}
+                          className="capitalize"
+                        >
+                          {method.toLowerCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/")}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" isLoading={isLoading}>
+              Criar Reserva
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </>
   );
 }

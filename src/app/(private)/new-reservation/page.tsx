@@ -1,8 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { BedDouble } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,7 +9,7 @@ import {
 import { ReservationForm } from "./components/ReservationForm";
 
 export const metadata: Metadata = {
-  title: "Nova Reserva",
+  title: "MotelHub | Nova Reserva",
   description: "Crie uma nova reserva",
 };
 

@@ -15,7 +15,7 @@ import AddQuarto from "./components/AddQuarto";
 import { Room } from "@/lib/types/Room";
 
 export const metadata: Metadata = {
-  title: "Gerenciamento de Quartos",
+  title: "MotelHub | Quartos",
   description: "Gerencie os quartos do motel e seu status",
 };
 
