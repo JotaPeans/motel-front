@@ -5,6 +5,11 @@ export const menuItems = [
     bold: false
   },
   {
+    href: "/products",
+    label: "Produtos",
+    bold: false
+  },
+  {
     href: "/reservations",
     label: "Reservas",
     bold: false

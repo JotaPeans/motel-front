@@ -15,10 +15,10 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   // Normalmente estes dados viriam de uma API
   const metricsData = [
-    { title: "Faturamento", value: "R$ 523.000", icon: TrendingUp, color: "bg-pink-500" },
-    { title: "Reservas", value: "R$ 808.000", icon: TrendingUp, color: "bg-emerald-500" },
-    { title: "Ocupação", value: "R$ 1.012.000", icon: TrendingUp, color: "bg-orange-500" },
-    { title: "Receita Total", value: "R$ 2.343.000", icon: TrendingUp, color: "bg-blue-500" },
+    { title: "Faturamento Reservas", value: "R$ 523.000", icon: TrendingUp, color: "bg-pink-500" },
+    { title: "Faturamento Produtos", value: "R$ 808.000", icon: TrendingUp, color: "bg-emerald-500" },
+    { title: "Receita Total", value: "R$ 1.012.000", icon: TrendingUp, color: "bg-orange-500" },
+    { title: "Lucro Total", value: "R$ 2.343.000", icon: TrendingUp, color: "bg-blue-500" },
   ]
 
   const productAData = [
@@ -63,7 +63,7 @@ export default async function DashboardPage() {
         <div className="md:col-span-1">
           <UserProfile />
         </div>
-        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-1 gap-4">
           {metricsData.map((metric, index) => (
             <Card key={index} className="bg-zinc-800 border-zinc-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
 const publicRoutes = ["/login"];
-const privateRoutes = ["/dashboard", "/rooms", "/new-reservations", "/customers", "/reservations"];
+const privateRoutes = ["/dashboard","/products", "/rooms", "/new-reservations", "/customers", "/reservations"];
 
 function verifyJwt(token: string) {
   try {
