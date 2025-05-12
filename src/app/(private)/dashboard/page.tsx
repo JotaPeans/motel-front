@@ -3,7 +3,7 @@ import { TrendingUp } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PerformanceChart } from "./components/PerformanceChart"
-import { RegionalAnalysis } from "./components/RegionalAnalysis"
+import { CheckinHeatmap } from "./components/CheckinHeatmap"
 import { ProductChart } from "./components/ProductChart"
 import { UserProfile } from "./components/UserProfile"
 
@@ -42,21 +42,6 @@ export default async function DashboardPage() {
     { trimestre: "Trim4", valor: 140000 },
   ]
 
-  const regionalData = {
-    total: 506,
-    percentages: [
-      { label: "18,2%", description: "Norte e Nordeste" },
-      { label: "81,8%", description: "Sul e Sudeste" },
-    ],
-    regions: [
-      { name: "Norte", value: 56 },
-      { name: "Nordeste", value: 78 },
-      { name: "Centro-Oeste", value: 36 },
-      { name: "Sudeste", value: 313 },
-      { name: "Sul", value: 56 },
-    ],
-  }
-
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 bg-zinc-900 text-white">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -92,10 +77,10 @@ export default async function DashboardPage() {
 
         <Card className="bg-zinc-800 border-zinc-700">
           <CardHeader>
-            <CardTitle className="text-zinc-200">Análise Regional</CardTitle>
+            <CardTitle className="text-zinc-200">Heatmap de Check-ins / Check-outs</CardTitle>
           </CardHeader>
           <CardContent>
-            <RegionalAnalysis data={regionalData} />
+            <CheckinHeatmap />
           </CardContent>
         </Card>
       </div>
