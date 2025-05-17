@@ -7,40 +7,99 @@ import { CheckinHeatmap } from "./components/CheckinHeatmap"
 import { ProductChart } from "./components/ProductChart"
 import { UserProfile } from "./components/UserProfile"
 
+import { getAllRooms } from "@/app/api/room/getAll"
+import { getAllReservations } from "@/app/api/reservation/getAll"
+
+import { Room } from "@/lib/types/Room"
+import { Reservation } from "@/lib/types/Reservation"
+
 export const metadata: Metadata = {
   title: "MotelHub | Dashboard",
   description: "Visualize métricas e desempenho do seu negócio",
 }
 
 export default async function DashboardPage() {
-  // Normalmente estes dados viriam de uma API
+  // 1. Buscar rooms e reservations em paralelo
+  const [roomsData, reservationsData] = await Promise.all([
+    getAllRooms(),
+    getAllReservations(),
+  ])
+
+  const rooms: Room[] = roomsData.data ?? []
+  const reservations: Reservation[] = reservationsData.data ?? []
+
+  // 2. Criar um mapa quartoId → preço
+  const priceMap = new Map<number, number>(
+    rooms.map((room: Room) => [room.id, room.valor]),
+  )
+
+  // 3. Filtrar só reservas finalizadas e somar faturamento
+  const finalized = reservations.filter(r => r.status === "FINALIZADA")
+  const faturamentoReservas = finalized.reduce((sum, r) => {
+    const preco = priceMap.get(r.quartoId) ?? 0
+    return sum + preco
+  }, 0)
+
+  // 4. (Exemplo) Supondo que você tenha vendas de produtos:
+  //    const { data: products } = await getAllProducts()
+  //    const faturamentoProdutos = products.reduce((s,p) => s + p.price * p.qty, 0)
+  // Por ora, vamos reutilizar faturamentoReservas como placeholder:
+
+  // const faturamentoProdutos = faturamentoReservas * 0.6
+
+  const receitaTotal = faturamentoReservas + 0
+  const margemLucro   = 0.25  // ex.: 25%
+  const lucroTotal    = receitaTotal  // receita Total+ custo produtos quando tiver produtos pronto
+
+  // 5. Montar o array de métricas dinâmicas
   const metricsData = [
-    { title: "Faturamento Reservas", value: "R$ 523.000", icon: TrendingUp, color: "bg-pink-500" },
-    { title: "Faturamento Produtos", value: "R$ 808.000", icon: TrendingUp, color: "bg-emerald-500" },
-    { title: "Receita Total", value: "R$ 1.012.000", icon: TrendingUp, color: "bg-orange-500" },
-    { title: "Lucro Total", value: "R$ 2.343.000", icon: TrendingUp, color: "bg-blue-500" },
+    {
+      title: "Faturamento Reservas",
+      value: `R$ ${faturamentoReservas.toLocaleString("pt-BR")}`,
+      icon: TrendingUp,
+      color: "bg-pink-500",
+    },
+    {
+      title: "Faturamento Produtos",
+      // value: `R$ ${faturamentoProdutos.toLocaleString("pt-BR")}`, colocar variavel dos produtos quando tiver pronto
+      icon: TrendingUp,
+      color: "bg-emerald-500",
+    },
+    {
+      title: "Receita Total",
+      value: `R$ ${receitaTotal.toLocaleString("pt-BR")}`,
+      icon: TrendingUp,
+      color: "bg-orange-500",
+    },
+    {
+      title: "Lucro Total",
+      value: `R$ ${lucroTotal.toLocaleString("pt-BR")}`,
+      icon: TrendingUp,
+      color: "bg-blue-500",
+    },
   ]
 
-  const productAData = [
-    { trimestre: "Trim1", valor: 117000 },
-    { trimestre: "Trim2", valor: 134000 },
-    { trimestre: "Trim3", valor: 127000 },
-    { trimestre: "Trim4", valor: 145000 },
-  ]
+  // 6. Agrupar por trimestre para o gráfico de produto/exemplo
+  const quarters: Record<string, number> = {}
+  finalized.forEach(r => {
+    const date = new Date(r.data)
+    const q = `Trim${Math.floor(date.getMonth() / 3) + 1}`
+    const preco = priceMap.get(r.quartoId) ?? 0
+    quarters[q] = (quarters[q] || 0) + preco
+  })
+  const productAData = Object.entries(quarters).map(([trimestre, valor]) => ({ trimestre, valor }))
 
-  const productBData = [
-    { trimestre: "Trim1", valor: 105000 },
-    { trimestre: "Trim2", valor: 130000 },
-    { trimestre: "Trim3", valor: 95000 },
-    { trimestre: "Trim4", valor: 120000 },
-  ]
+  // 7. Preparar dados para PerformanceChart (receita diária)
+  const performanceData = finalized.map(r => ({
+    date: new Date(r.data),
+    value: priceMap.get(r.quartoId) ?? 0,
+  }))
 
-  const productCData = [
-    { trimestre: "Trim1", valor: 95000 },
-    { trimestre: "Trim2", valor: 110000 },
-    { trimestre: "Trim3", valor: 125000 },
-    { trimestre: "Trim4", valor: 140000 },
-  ]
+  // 8. Preparar dados para o Heatmap de check‐in/out
+  const heatmapData = reservations.map(r => ({
+    date: new Date(r.data),
+    type: r.status === "FINALIZADA" ? "check-out" : "check-in",
+  }))
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 bg-zinc-900 text-white">
@@ -49,8 +108,8 @@ export default async function DashboardPage() {
           <UserProfile />
         </div>
         <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-1 gap-4">
-          {metricsData.map((metric, index) => (
-            <Card key={index} className="bg-zinc-800 border-zinc-700">
+          {metricsData.map((metric, i) => (
+            <Card key={i} className="bg-zinc-800 border-zinc-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-zinc-200">{metric.title}</CardTitle>
                 <div className={`h-8 w-8 rounded-full ${metric.color} flex items-center justify-center`}>
@@ -71,7 +130,8 @@ export default async function DashboardPage() {
             <CardTitle className="text-zinc-200">Faturamento e Impacto</CardTitle>
           </CardHeader>
           <CardContent>
-            <PerformanceChart />
+            {/* Passe os dados via prop */}
+            <PerformanceChart data={performanceData} />
           </CardContent>
         </Card>
 
@@ -80,36 +140,18 @@ export default async function DashboardPage() {
             <CardTitle className="text-zinc-200">Heatmap de Check-ins / Check-outs</CardTitle>
           </CardHeader>
           <CardContent>
-            <CheckinHeatmap />
+            <CheckinHeatmap data={heatmapData} />
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mt-8">
         <Card className="bg-zinc-800 border-zinc-700">
           <CardHeader>
-            <CardTitle className="text-zinc-200">Produto A</CardTitle>
+            <CardTitle className="text-zinc-200">Receita por Trimestre</CardTitle>
           </CardHeader>
           <CardContent>
-            <ProductChart data={productAData} color="#f43f5e" />
-          </CardContent>
-        </Card>
-
-        <Card className="bg-zinc-800 border-zinc-700">
-          <CardHeader>
-            <CardTitle className="text-zinc-200">Produto B</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ProductChart data={productBData} color="#10b981" />
-          </CardContent>
-        </Card>
-
-        <Card className="bg-zinc-800 border-zinc-700">
-          <CardHeader>
-            <CardTitle className="text-zinc-200">Produto C</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ProductChart data={productCData} color="#f97316" />
+            <ProductChart data={productAData} />
           </CardContent>
         </Card>
       </div>
