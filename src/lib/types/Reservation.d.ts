@@ -1,3 +1,4 @@
+import { PaymentMethodType } from "./Payment";
 import { RoomStatus, RoomTipo } from "./Room";
 
 export type ReservationStatus = "CONFIRMADA" | "CANCELADA" | "FINALIZADA";
@@ -6,7 +7,8 @@ export type ReservationStatus = "CONFIRMADA" | "CANCELADA" | "FINALIZADA";
 export interface Reservation {
   readonly id: number;
   status: ReservationStatus;
-  readonly data: Date;
+  readonly data_checkin: string;
+  readonly data_checkout: string;
 
   funcionarioId: number;
   clienteId: number;
@@ -16,4 +18,7 @@ export interface Reservation {
   readonly quarto_numero: string;
   readonly quarto_tipo: RoomTipo;
   readonly quarto_status: RoomStatus;
+  readonly quarto_preco: number;
+
+  readonly forma_pagamento: PaymentMethodType;
 }

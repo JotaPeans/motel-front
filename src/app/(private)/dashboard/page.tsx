@@ -102,7 +102,7 @@ export default async function DashboardPage() {
   }))
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 bg-zinc-900 text-white">
+    <main className="flex flex-1 overflow-y-auto flex-col gap-4 p-4 md:gap-8 md:p-8 bg-zinc-900 text-white">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="md:col-span-1">
           <UserProfile />
