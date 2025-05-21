@@ -33,3 +33,21 @@ export function phoneMask(value: string) {
   }
   return value
 }
+
+export const seconds = (seconds: number) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, seconds * 1000);
+  });
+};
+
+export async function useTimer(callback: (time: number) => Promise<void | "break">, time: number) {
+  for (let i = time; i >= 0; i--) {
+    const returned = await callback(i);
+
+    if(returned === "break") break;
+
+    await seconds(1);
+  }
+}

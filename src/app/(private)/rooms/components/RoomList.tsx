@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MoreHorizontal, Search } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Room, RoomStatus, RoomTipo } from "@/lib/types/Room";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "sonner";
@@ -54,15 +54,13 @@ export function RoomList({ rooms }: RoomListProps) {
   const [statusFilter, setStatusFilter] = useState<RoomStatus | null>(null);
   const [typeFilter, setTypeFilter] = useState<RoomTipo | null>(null);
 
-  const filteredRooms = rooms.filter(
-    (room) => {
-      if(statusFilter || typeFilter) {
-        return room.status === statusFilter || room.tipo === typeFilter
-      }
-      
-      return room;
+  const filteredRooms = rooms.filter((room) => {
+    if (statusFilter || typeFilter) {
+      return room.status === statusFilter || room.tipo === typeFilter;
     }
-  );
+
+    return room;
+  });
 
   async function onCheckout(reservaId: number) {
     const { data, error } = await checkoutReservation(reservaId);
@@ -147,10 +145,7 @@ export function RoomList({ rooms }: RoomListProps) {
                   {room.tipo.toLowerCase()}
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {new Intl.NumberFormat("pr-br", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(room.valor)}
+                  R$ {room.valor.toFixed(2).replace(".", ",")}
                 </TableCell>
                 <TableCell className="font-semibold">
                   {(room.numero / 100).toFixed(0)}

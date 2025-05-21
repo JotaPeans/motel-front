@@ -11,8 +11,10 @@ interface CreatePaymentIntentProps {
   customer: Customer;
 }
 
-interface PointOrder {
+export interface PointOrder {
   id: string;
+  amount: number;
+  method: "debit" | "credit";
 }
 
 export async function createPointPaymentIntent({
@@ -33,8 +35,10 @@ export async function createPointPaymentIntent({
     if (error || room === null)
       throw new Error(error?.message || "Quarto nao encontrado");
 
+    const url = `/payment/provider/${method}`;
+    console.log("🚀 ~ returnawaitcreateServerAction ~ url:", url)
     const { data } = await axiosFetcher.post<PointOrder>(
-      `/payment/provider/${method}`,
+      url,
       {
         amount: room.valor,
         customer_id: customer.id,

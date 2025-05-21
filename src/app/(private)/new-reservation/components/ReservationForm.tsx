@@ -44,11 +44,14 @@ import {
 } from "@/components/ui/popover";
 import { getAllCustomers } from "@/app/api/customer/getAll";
 import { createReservation } from "@/app/api/reservation/create";
-import { paymentMethods, PaymentMethodType } from "@/lib/types/Payment";
+import { paymentMethodMapping, paymentMethods, } from "@/lib/types/Payment";
 import { createPixPaymentIntent } from "@/app/api/payment/createPixPaymentIntent";
 import { PixOrder } from "@/app/api/payment/createPixPaymentIntent";
+import { createPointPaymentIntent, PointOrder } from "@/app/api/payment/createPointPaymentIntent";
+
 import PixDialog from "./PixDialog";
-import { createPointPaymentIntent } from "@/app/api/payment/createPointPaymentIntent";
+import PdvDialog from "./PdvDialog";
+import { addReservationToPaymentById } from "@/app/api/payment/addReservationToPaymentById";
 
 const formSchema = z.object({
   customerId: z.string().optional(),
@@ -82,6 +85,7 @@ export function ReservationForm() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [pixOrder, setPixOrder] = useState<PixOrder | null>(null);
+  const [pointOrder, setPointOrder] = useState<PointOrder | null>(null);
 
   const [isLoading, startFetch] = useTransition();
   const [_, startFetchRooms] = useTransition();
@@ -100,9 +104,10 @@ export function ReservationForm() {
 
   const clearOrder = useCallback(() => {
     setPixOrder(null);
+    setPointOrder(null);
   }, []);
 
-  const customerPaid = useCallback(async () => {
+  const customerPaid = useCallback(async (paymentId: number) => {
     const values = form.getValues();
 
     const { data, error } = await createReservation({
@@ -117,6 +122,10 @@ export function ReservationForm() {
       funcionarioId: 1,
       quartoId: parseInt(values.quartoId || "0"),
     });
+
+    if(data?.id) {
+      await addReservationToPaymentById({ id: paymentId, reservaId: data.id })
+    }
 
     toast(data ? "Reserva criada com sucesso!" : error?.message);
     setPixOrder(null);
@@ -195,14 +204,12 @@ export function ReservationForm() {
         if (error) toast(error.message);
       } else if (["DEBITO", "CREDITO"].includes(values.paymentMethod)) {
         const { data, error } = await createPointPaymentIntent({
-          method: values.paymentMethod.toLowerCase() as "credit" | "debit",
+          method: paymentMethodMapping[values.paymentMethod] as "debit" | "credit",
           roomId: parseInt(values.quartoId),
           customer: customer,
         });
 
-        if (data) {
-          //TODO: Abrir um dialog para pedir o pagamento via maquineta
-        }
+        if (data) setPointOrder(data);
 
         if (error) toast(error.message);
       }
@@ -228,6 +235,12 @@ export function ReservationForm() {
     <>
       <PixDialog
         order={pixOrder}
+        clearOrder={clearOrder}
+        customerPaid={customerPaid}
+      />
+
+      <PdvDialog
+        order={pointOrder}
         clearOrder={clearOrder}
         customerPaid={customerPaid}
       />

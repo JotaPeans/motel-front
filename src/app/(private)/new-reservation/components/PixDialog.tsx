@@ -8,13 +8,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { seconds, useTimer } from "@/lib/utils";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 interface PixDialogProps {
   order: PixOrder | null;
   clearOrder: () => void;
-  customerPaid: () => void;
+  customerPaid: (paymentId: number) => void;
 }
 
 var MAX_TIMEOUT = 60;
@@ -33,28 +34,29 @@ const PixDialog = ({ customerPaid, order, clearOrder }: PixDialogProps) => {
     if (open && order !== null) {
       let timeout = MAX_TIMEOUT;
 
-      const interval = setInterval(async () => {
-        timeout -= 1;
+      useTimer(async (currentTime) => {
         if (timeRef.current) {
-          timeRef.current.innerText = `Aguardando pagamento... (${timeout})`;
+          timeRef.current.innerText = `Aguardando pagamento... (${currentTime})`;
         }
 
         const { data } = await getPaymentByProviderId(order.id);
 
         if (data) {
-          closeAll(interval);
-          customerPaid();
-        };
-
-        if (timeout <= 0) {
-          closeAll(interval);
+          await seconds(2);
+          closeAll();
+          customerPaid(data.id);
+          return "break";
         }
-      }, 1000);
+
+        if (currentTime === 0) {
+          closeAll();
+          return "break";
+        }
+      }, timeout);
     }
   }, [open, order]);
 
-  function closeAll(interval: NodeJS.Timeout) {
-    clearInterval(interval);
+  function closeAll() {
     setOpen(false);
     clearOrder();
   }
