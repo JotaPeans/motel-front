@@ -31,25 +31,29 @@ const AppProvider = ({ children, session }: AppProviderProps) => {
 
   return (
     <AppContext.Provider value={{ session }}>
-      <div className="flex min-h-screen w-full flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+      <div className="flex h-screen w-full">
+        <aside className="flex flex-col items-center gap-4 flex-1 min-w-64 max-w-64 border-r p-8">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <Image src="/MotelHub.svg" alt="MotelHub" width={174} height={93} />
           </Link>
-          <nav className="ml-auto flex gap-2">
+          <nav className="flex flex-col gap-4 mt-4 w-full">
             {menuItems.map((menu, key) => (
               <Button
                 asChild
                 disabled={menu.href === pathname}
                 key={key}
-                variant={menu.bold ? "default" : "outline"}
+                variant={menu.bold ? "default" : "ghost"}
+                className="justify-start"
                 size="sm"
               >
-                <Link href={menu.href}>{menu.label}</Link>
+                <Link href={menu.href} className="flex items-center gap-4">
+                  <menu.icon />
+                  {menu.label}
+                </Link>
               </Button>
             ))}
           </nav>
-        </header>
+        </aside>
         {children}
       </div>
     </AppContext.Provider>
