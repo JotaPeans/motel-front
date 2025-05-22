@@ -140,7 +140,7 @@ export function ReservationForm() {
         return;
       }
 
-      const { data } = await getAllCustomers(value);
+      const { data } = await getAllCustomers({ nome: value });
 
       if (data) {
         setSearchResults(data);

@@ -19,14 +19,17 @@ const Reservations = () => {
 
   useEffect(() => {
     startFetch(async () => {
-      const { data } = await getAllReservations({ page: page, size: ITEMS_SIZE });
+      const { data } = await getAllReservations({
+        page: page,
+        size: ITEMS_SIZE,
+      });
 
       if (data) setReservations(data);
     });
   }, [page]);
 
   return (
-    <main className="flex flex-1 flex-col overflow-y-auto gap-4 p-4 md:gap-8 md:p-8">
+    <main className="flex flex-1 flex-col overflow-y-auto h-screen gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold">Reservas</h1>
@@ -36,7 +39,7 @@ const Reservations = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex-1 flex flex-col overflow-y-auto gap-4">
         {isLoading ? (
           <Skeleton className="w-full h-28" />
         ) : (
@@ -53,14 +56,13 @@ const Reservations = () => {
             />
           ))
         )}
-
-        <div className="flex items-center justify-center w-full">
-          <SimplePaginator
-            currentPage={page}
-            setCurrentPage={setPage}
-            disableNext={reservations.length < ITEMS_SIZE}
-          />
-        </div>
+      </div>
+      <div className="flex items-center justify-center w-full">
+        <SimplePaginator
+          currentPage={page}
+          setCurrentPage={setPage}
+          disableNext={reservations.length < ITEMS_SIZE}
+        />
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ import createServerAction from "@/app/api/createServerActions";
 import axiosFetcher from "../axiosFetcher";
 import { getRoomById } from "../room/getById";
 import { Customer } from "@/lib/types/Customer";
+import { addCustomer } from "../customer/addCustomer";
 
 interface CreatePaymentIntent {
   roomId: number;
@@ -24,7 +25,7 @@ export async function createPixPaymentIntent({
     const { data: room, error } = await getRoomById(roomId);
 
     if (customer.id === 0) {
-      const { data } = await axiosFetcher.post<Customer>("/customer", customer);
+      const { data } = await addCustomer(customer);
 
       if (data) customer.id = data.id;
       else throw new Error("Erro ao criar o cliente");

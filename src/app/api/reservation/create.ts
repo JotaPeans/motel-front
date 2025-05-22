@@ -4,6 +4,7 @@ import createServerAction from "@/app/api/createServerActions";
 import axiosFetcher from "../axiosFetcher";
 import { Reservation } from "@/lib/types/Reservation";
 import { Customer } from "@/lib/types/Customer";
+import { addCustomer } from "../customer/addCustomer";
 
 interface CreateReservationProps {
   cliente: Customer;
@@ -16,7 +17,7 @@ export async function createReservation(body: CreateReservationProps) {
     const { cliente, quartoId, funcionarioId } = body;
 
     if (cliente.id === 0) {
-      const { data } = await axiosFetcher.post<Customer>("/customer", cliente);
+      const { data } = await addCustomer(cliente);
 
       if (data) cliente.id = data.id;
     }
