@@ -9,8 +9,8 @@ export const menuItems = [
   },
   {
     icon: ShoppingBag,
-    href: "/products",
-    label: "Produtos",
+    href: "/consuption",
+    label: "Consumo",
     bold: false
   },
   {
