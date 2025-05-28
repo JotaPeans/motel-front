@@ -7,6 +7,10 @@ import axiosFetcher from "../axiosFetcher";
 interface GetAllConsumosProps {
   page?: number;
   size?: number;
+  filters?: {
+    ano_consumo?: string;
+    produto_id?: string | number;
+  };
 }
 
 export async function getAllConsumos(params?: GetAllConsumosProps) {
@@ -16,6 +20,8 @@ export async function getAllConsumos(params?: GetAllConsumosProps) {
         ? {
             page: params.page,
             size: params.size,
+            ano_consumo: params.filters?.ano_consumo,
+            produto_id: params.filters?.produto_id,
           }
         : undefined,
     });

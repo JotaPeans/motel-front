@@ -4,5 +4,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <div className="flex min-h-screen flex-col">{children}</div>
+  return <div className="flex min-h-screen w-full flex-col">{children}</div>
 }

@@ -1,13 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useTransition } from 'react';
-import { getAllConsumos } from '@/app/api/consumo/getAll';
-import { Consumo as ConsumoType } from '@/lib/types/Consumo';
-import { Skeleton } from '@/components/ui/skeleton';
-import SimplePaginator from '@/components/SimplePaginator';
-import Consumo from './components/Consumo';
+import { useEffect, useState, useTransition } from "react";
+import { getAllConsumos } from "@/app/api/consumo/getAll";
+import { Consumo as ConsumoType } from "@/lib/types/Consumo";
+import { Skeleton } from "@/components/ui/skeleton";
+import SimplePaginator from "@/components/SimplePaginator";
+import Consumo from "./components/Consumo";
 
 const ITEMS_SIZE = 10;
+
+const currentYear = new Date().getFullYear();
 
 export default function Consumptions() {
   const [consumos, setConsumos] = useState<ConsumoType[]>([]);
@@ -16,7 +18,13 @@ export default function Consumptions() {
 
   useEffect(() => {
     startFetch(async () => {
-      const { data } = await getAllConsumos({ page, size: ITEMS_SIZE });
+      const { data } = await getAllConsumos({
+        page,
+        size: ITEMS_SIZE,
+        filters: {
+          ano_consumo: currentYear.toString(),
+        },
+      });
       if (data) setConsumos(data);
     });
   }, [page]);
@@ -36,9 +44,7 @@ export default function Consumptions() {
         {isLoading ? (
           <Skeleton className="w-full h-28" />
         ) : (
-          consumos.map((c, idx) => (
-            <Consumo key={idx} {...c} />
-          ))
+          consumos.map((c, idx) => <Consumo key={idx} {...c} />)
         )}
       </div>
 

@@ -11,6 +11,8 @@ import Reservation from "./components/Reservation";
 
 const ITEMS_SIZE = 10;
 
+const currentYear = new Date().getFullYear();
+
 const Reservations = () => {
   const [reservations, setReservations] = useState<ReservationType[]>([]);
   const [page, setPage] = useState(1);
@@ -22,6 +24,9 @@ const Reservations = () => {
       const { data } = await getAllReservations({
         page: page,
         size: ITEMS_SIZE,
+        filters: {
+          ano_reserva: currentYear.toString()
+        }
       });
 
       if (data) setReservations(data);
