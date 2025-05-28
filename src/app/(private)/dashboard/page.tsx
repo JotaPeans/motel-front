@@ -51,7 +51,7 @@ export default async function DashboardPage() {
     return sum + (c.valor ?? 0)
   }, 0)
 
-  // 6. Receita total e lucro
+  // 6. Receita total
   const receitaTotal = faturamentoReservas + faturamentoConsumo
 
   // 7. Métricas dinâmicas
@@ -137,7 +137,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <CheckinHeatmap data={heatmapData} />
+            <CheckinHeatmap reservations={reservations} />
           </CardContent>
         </Card>
       </div>
